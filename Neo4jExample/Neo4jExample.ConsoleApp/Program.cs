@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.ConstrainedExecution;
 using System.Text;
 using System.Threading.Tasks;
 using Neo4jExample.Core.Neo4j.Settings;
@@ -14,6 +15,10 @@ namespace Neo4jExample.ConsoleApp
 {
     internal class Program
     {
+        // File Names to read the Data from:
+        private static readonly string carriersFileName = @"D:\github\LearningNeo4jAtScale\Resources\UNIQUE_CARRIERS.csv";
+        private static readonly string airportsFileName = @"D:\github\LearningNeo4jAtScale\Resources\56803256_T_MASTER_CORD.csv";
+
         public static void Main(string[] args)
         {
             RunAsync().GetAwaiter().GetResult();
@@ -21,30 +26,29 @@ namespace Neo4jExample.ConsoleApp
 
         public static async Task RunAsync()
         {
-
-            Parsers.AirportParser
-                .ReadFromFile(@"D:\github\LearningNeo4jAtScale\Resources\UNIQUE_CARRIERS.csv", Encoding.ASCII)
-
+            // Get the Base Data:
+            var reasons = GetReasons();
+            var carriers = GetCarriers(carriersFileName);
+            var airports = GetAirportInformation(airportsFileName);
+            
             var settings = ConnectionSettings.CreateBasicAuth("bolt://localhost:7687/db/actors", "neo4j", "test_pwd");
 
             using (var client = new Neo4JClient(settings))
             {
-                //// Create Indices for faster Lookups:
+                // Create Indices for faster Lookups:
                 await client.CreateIndices();
 
-                //// Create Base Data:
-                //await client.CreateMovies(service.Movies);
-                //await client.CreatePersons(service.Persons);
-                //await client.CreateGenres(service.Genres);
+                // Create the base flight data:
+                await client.CreateReasons(reasons);
+                await client.CreateCarriers(carriers);
+                await client.CreateAirports(airports);
 
-                //// Create Relationships:
-                //await client.CreateRelationships(service.Metadatas);
+                // Create Base Data:
+                await client.CreateMovies(service.Movies);
             }
         }
 
-
-        // @"D:\github\LearningNeo4jAtScale\Resources\UNIQUE_CARRIERS.csv"
-        private IList<Graph.Model.Carrier> GetCarriers(string filename)
+        private static IList<Graph.Model.Carrier> GetCarriers(string filename)
         {
             return Parsers.CarrierParser
                 .ReadFromFile(filename, Encoding.ASCII)
@@ -58,8 +62,7 @@ namespace Neo4jExample.ConsoleApp
                 .ToList();
         }
 
-        // @"D:\github\LearningNeo4jAtScale\Resources\56803256_T_MASTER_CORD.csv"
-        private IList<Graph.Model.AirportInformation> GetAirportInformation(string filename)
+        private static IList<Graph.Model.AirportInformation> GetAirportInformation(string filename)
         {
             return Parsers.AirportParser
                 // Read from the Master Coordinate CSV File:
@@ -98,7 +101,7 @@ namespace Neo4jExample.ConsoleApp
                 .ToList();
         }
 
-        private IList<Graph.Model.Reason> GetReasons()
+        private static IList<Graph.Model.Reason> GetReasons()
         {
             return new[]
             {
@@ -132,7 +135,7 @@ namespace Neo4jExample.ConsoleApp
 
         private IList<Graph.Model.FlightInformation> GetFlightInformation(string filename)
         {
-            var flightsLookup = Parsers.FlightStatisticsParser
+            return Parsers.FlightStatisticsParser
                 // Read from the Master Coordinate CSV File:
                 .ReadFromFile(filename, Encoding.ASCII)
                 // Only take valid entities:

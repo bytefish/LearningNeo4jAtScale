@@ -57,7 +57,7 @@ namespace Neo4jExample
             }
         }
 
-        private async Task CreateCarriers(IList<Carrier> carriers)
+        public async Task CreateCarriers(IList<Carrier> carriers)
         {
             string cypher = new StringBuilder()
                 .AppendLine("UNWIND {carriers} AS carrier")
@@ -71,7 +71,7 @@ namespace Neo4jExample
             }
         }
 
-        private async Task CreateAirports(IList<AirportInformation> airports)
+        public async Task CreateAirports(IList<AirportInformation> airports)
         {
             string cypher = new StringBuilder()
                 .AppendLine("UNWIND {airports} AS row")
