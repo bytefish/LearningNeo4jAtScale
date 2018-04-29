@@ -28,5 +28,15 @@ namespace Neo4jExample.Csv.Parser
                 return new CsvParser<Airport>(csvParserOptions, new AirportMapper());
             }
         }
+
+        public static CsvParser<Carrier> CarrierParser
+        {
+            get
+            {
+                CsvParserOptions csvParserOptions = new CsvParserOptions(true, ',');
+
+                return new CsvParser<Carrier>(csvParserOptions, new CarrierMapper());
+            }
+        }
     }
 }

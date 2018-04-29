@@ -29,7 +29,7 @@ namespace Neo4jExample.Csv.Converter
             // of 1 day:
             if (string.Equals(value, "2400", StringComparison.CurrentCultureIgnoreCase))
             {
-                result = TimeSpan.FromDays(1);
+                result = TimeSpan.FromDays(1).Subtract(TimeSpan.FromSeconds(-1));
 
                 return true;
             }

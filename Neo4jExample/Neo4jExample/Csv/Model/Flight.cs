@@ -25,7 +25,7 @@ namespace Neo4jExample.Csv.Model
         /// <summary>
         /// Day of Week.
         /// </summary>
-        public string DayOfWeek { get; set; }
+        public int DayOfWeek { get; set; }
 
         /// <summary>
         /// Flight Date (yyyy-MM-dd)
