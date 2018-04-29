@@ -1,8 +1,10 @@
 ﻿// Copyright (c) Philipp Wagner. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using Neo4jExample.Csv.Model;
 using TinyCsvParser.Mapping;
+using TinyCsvParser.TypeConverter;
 
 namespace Neo4jExample.Csv.Mapper
 {
@@ -10,14 +12,14 @@ namespace Neo4jExample.Csv.Mapper
     {
         public AirportMapper()
         {
-            MapProperty(0, x => x.AirportId);
-            MapProperty(1, x => x.AirportName);
-            MapProperty(2, x => x.AirportCityName);
-            MapProperty(3, x => x.AirportWac);
-            MapProperty(4, x => x.AirportCountryName);
-            MapProperty(5, x => x.AirportCountryCodeISO);
-            MapProperty(6, x => x.AirportStateName);
-            MapProperty(7, x => x.AirportIsLatest);
+            MapProperty(1, x => x.AirportId);
+            MapProperty(3, x => x.AirportName);
+            MapProperty(4, x => x.AirportCityName);
+            MapProperty(6, x => x.AirportWac);
+            MapProperty(7, x => x.AirportCountryName);
+            MapProperty(8, x => x.AirportCountryCodeISO);
+            MapProperty(9, x => x.AirportStateName);
+            MapProperty(28, x => x.AirportIsLatest, new BoolConverter("1", "0", StringComparison.OrdinalIgnoreCase));
         }
     }
 }

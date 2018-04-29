@@ -10,7 +10,7 @@ using Neo4jExample.Core.Neo4j.Serializer;
 using Neo4jExample.Core.Neo4j.Settings;
 using Neo4jExample.Graph.Model;
 
-namespace Neo4jExample
+namespace Neo4jExample.Graph.Client
 {
     public class Neo4JClient : IDisposable
     {
@@ -25,13 +25,10 @@ namespace Neo4jExample
         {
             string[] queries = {
                 "CREATE CONSTRAINT ON (a:Airport) ASSERT a.id IS UNIQUE",
+                "CREATE CONSTRAINT ON (r:Reason) ASSERT r.code IS UNIQUE",
                 "CREATE CONSTRAINT ON (c:City) ASSERT c.name IS UNIQUE",
                 "CREATE CONSTRAINT ON (c:Country) ASSERT c.name IS UNIQUE",
-                "CREATE CONSTRAINT ON (c:Carrier) ASSERT c.code IS UNIQUE",
-                "CREATE INDEX ON :Flight(flight_number)",
-                "CREATE INDEX ON :Airport(id)",
-                "CREATE INDEX ON :Reason(code)",
-                "CREATE INDEX ON :Carrier(code)",
+                "CREATE CONSTRAINT ON (c:Carrier) ASSERT c.code IS UNIQUE"
             };
 
             using (var session = driver.Session())
@@ -61,7 +58,7 @@ namespace Neo4jExample
         {
             string cypher = new StringBuilder()
                 .AppendLine("UNWIND {carriers} AS carrier")
-                .AppendLine("MERGE (c:Carrier {id: carrier.code})")
+                .AppendLine("MERGE (c:Carrier {code: carrier.code})")
                 .AppendLine("SET c = carrier")
                 .ToString();
 
@@ -76,20 +73,20 @@ namespace Neo4jExample
             string cypher = new StringBuilder()
                 .AppendLine("UNWIND {airports} AS row")
                 // Add the Country:
-                .AppendLine("MERGE (country:Country { name: row.country.name })")
-                .AppendLine("SET country = row.country")
+                .AppendLine("MERGE (aCountry:Country { name: row.country.name })")
+                .AppendLine("SET aCountry = row.country")
                 .AppendLine()
                 // Add the City:
-                .AppendLine("WITH country")
-                .AppendLine("MERGE (city:City { name: row.city.name })")
-                .AppendLine("SET city = row.city")
-                .AppendLine("MERGE (city)-[:COUNTRY]->(country)")
+                .AppendLine("WITH aCountry, row")
+                .AppendLine("MERGE (aCity:City { name: row.city.name })")
+                .AppendLine("SET aCity = row.city")
+                .AppendLine("MERGE (aCity)-[:COUNTRY]->(aCountry)")
                 .AppendLine()
-                // Add the Airport:
-                .AppendLine("WITH city")
+                //// Add the Airport:
+                .AppendLine("WITH aCity, row")
                 .AppendLine("MERGE (airport:Airport {id: row.airport.airport_id})")
-                .AppendLine("SET a airport = row.airport")
-                .AppendLine("MERGE (a)-[r:IN_CITY]->(c)")
+                .AppendLine("SET airport = row.airport")
+                .AppendLine("MERGE (a)-[r:IN_CITY]->(aCity)")
                 .AppendLine()
                 .ToString();
 
@@ -107,10 +104,10 @@ namespace Neo4jExample
                 .AppendLine("MATCH (oAirport:Airport {airport_id: flight.origin}")
                 .AppendLine("MATCH (dAirport {airport_id: flight.destination}")
                 // Create the Flight Item:
-                .AppendLine("CREATE (f:Flight {flight_num: flight.flight_number}), ")
+                .AppendLine("CREATE (f:Flight {flight_num: flight.flight_number}),")
                 // Now add the ORIGIN and DESTINATION Relationships:
-                .AppendLine("   (f)-[:ORIGIN {taxi_time: flight.taxi_out, dep_delay: flight.departure_delay},")
-                .AppendLine("   (f)-[:DESTINATION {taxi_time: flight.taxi_in, arr_delay: flight.arrival_delay}")
+                .AppendLine("   (f)-[:ORIGIN {taxi_time: flight.taxi_out, dep_delay: flight.departure_delay}]->(oAirport),")
+                .AppendLine("   (f)-[:DESTINATION {taxi_time: flight.taxi_in, arr_delay: flight.arrival_delay}]->(dAirport)")
                 // Set Flight Information:
                 .AppendLine("SET f.year = flight.year,")
                 .AppendLine("    f.month = flight.month,")
@@ -133,7 +130,6 @@ namespace Neo4jExample
                 .AppendLine("MATCH (r: Reason {name: flight.cancellation_code})")
                 .AppendLine("MERGE(f)-[:CANCELLED_BY]->(r)")
                 .ToString();
-
 
             using (var session = driver.Session())
             {
