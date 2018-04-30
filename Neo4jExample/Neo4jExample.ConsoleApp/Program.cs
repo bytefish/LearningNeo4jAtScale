@@ -219,27 +219,27 @@ namespace Neo4jExample.ConsoleApp
 
             var delays = new List<Graph.Model.Delay>();
 
-            if (source.CarrierDelay.HasValue)
+            if (source.CarrierDelay.HasValue && source.CarrierDelay > 0)
             {
                 delays.Add(new Graph.Model.Delay { Duration = source.CarrierDelay.Value, Reason = "A" });
             }
 
-            if (source.WeatherDelay.HasValue)
+            if (source.WeatherDelay.HasValue && source.WeatherDelay > 0)
             {
                 delays.Add(new Graph.Model.Delay { Duration = source.WeatherDelay.Value, Reason = "B" });
             }
 
-            if (source.NasDelay.HasValue)
+            if (source.NasDelay.HasValue && source.NasDelay > 0)
             {
                 delays.Add(new Graph.Model.Delay { Duration = source.NasDelay.Value, Reason = "C" });
             }
 
-            if (source.SecurityDelay.HasValue)
+            if (source.SecurityDelay.HasValue && source.SecurityDelay > 0)
             {
                 delays.Add(new Graph.Model.Delay { Duration = source.SecurityDelay.Value, Reason = "D" });
             }
 
-            if (source.LateAircraftDelay.HasValue)
+            if (source.LateAircraftDelay.HasValue && source.LateAircraftDelay > 0)
             {
                 delays.Add(new Graph.Model.Delay { Duration = source.LateAircraftDelay.Value, Reason = "Z" });
             }

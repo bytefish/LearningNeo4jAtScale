@@ -24,7 +24,8 @@ namespace Neo4jExample.Graph.Client
         public async Task CreateIndices()
         {
             string[] queries = {
-                "CREATE CONSTRAINT ON (a:Airport) ASSERT a.id IS UNIQUE",
+                "CREATE CONSTRAINT ON (f:Flight) ASSERT f.flight_number IS UNIQUE",
+                "CREATE CONSTRAINT ON (a:Airport) ASSERT a.airport_id IS UNIQUE",
                 "CREATE CONSTRAINT ON (r:Reason) ASSERT r.code IS UNIQUE",
                 "CREATE CONSTRAINT ON (c:City) ASSERT c.name IS UNIQUE",
                 "CREATE CONSTRAINT ON (c:Country) ASSERT c.name IS UNIQUE",
@@ -84,7 +85,7 @@ namespace Neo4jExample.Graph.Client
                 .AppendLine()
                 //// Add the Airport:
                 .AppendLine("WITH aCity, row")
-                .AppendLine("MERGE (airport:Airport {id: row.airport.airport_id})")
+                .AppendLine("MERGE (airport:Airport {airport_id: row.airport.airport_id})")
                 .AppendLine("SET airport = row.airport")
                 .AppendLine("MERGE (a)-[r:IN_CITY]->(aCity)")
                 .AppendLine()
@@ -99,41 +100,49 @@ namespace Neo4jExample.Graph.Client
         public async Task CreateFlights(IList<FlightInformation> flights)
         {
             string cypher = new StringBuilder()
-                .AppendLine("UNWIND {flights} AS flight")
+                .AppendLine("UNWIND {flights} AS row")
                 // Get the Airports of this Flight:
-                .AppendLine("MATCH (oAirport:Airport {airport_id: flight.origin}")
-                .AppendLine("MATCH (dAirport {airport_id: flight.destination}")
+                .AppendLine("MATCH (oAirport:Airport {airport_id: row.origin})")
+                .AppendLine("MATCH (dAirport:Airport {airport_id: row.destination})")
                 // Create the Flight Item:
-                .AppendLine("CREATE (f:Flight {flight_num: flight.flight_number}),")
-                // Now add the ORIGIN and DESTINATION Relationships:
-                .AppendLine("   (f)-[:ORIGIN {taxi_time: flight.taxi_out, dep_delay: flight.departure_delay}]->(oAirport),")
-                .AppendLine("   (f)-[:DESTINATION {taxi_time: flight.taxi_in, arr_delay: flight.arrival_delay}]->(dAirport)")
-                // Set Flight Information:
-                .AppendLine("SET f.year = flight.year,")
-                .AppendLine("    f.month = flight.month,")
-                .AppendLine("    f.day = flight.day_of_month,")
-                .AppendLine("    f.weekday = flight.day_of_week")
+                .AppendLine("MERGE (f:Flight {flight_number: row.flight_number})")
+                // Set Flight Details:
+                .AppendLine("SET f.year = row.year,")
+                .AppendLine("    f.month = row.month,")
+                .AppendLine("    f.day = row.day_of_month,")
+                .AppendLine("    f.weekday = row.day_of_week")
+                .AppendLine()
+                // Relate Flight to Origin Airport:
+                .AppendLine("MERGE (f)-[o:ORIGIN]->(oAirport)")
+                .AppendLine("SET o.taxi_time = row.taxi_out,")
+                .AppendLine("    o.dep_delay = row.departure_delay")
+                .AppendLine()
+                // Relate Flight to Destination Airport:
+                .AppendLine("MERGE (f)-[d:DESTINATION]->(dAirport)")
+                .AppendLine("SET d.taxi_time = row.taxi_in,")
+                .AppendLine("    d.arr_delay = row.arrival_delay")
                 .AppendLine()
                 // Add Carrier Information:
-                .AppendLine("WITH flight, f")
-                .AppendLine("MATCH (car:Carrier {code: flight.carrier})")
+                .AppendLine("WITH row, f")
+                .AppendLine("MATCH (car:Carrier {code: row.carrier})")
                 .AppendLine("MERGE (f)-[:CARRIER]->(car)")
                 .AppendLine()
                 // Add Delay Information:
-                .AppendLine("WITH flight, f")
-                .AppendLine("UNWIND flight.delays as delay")
-                .AppendLine("   MATCH (r:Reason {code: delay.code}")
-                .AppendLine("   MERGE (f)-[:DELAYED_BY {delay.duration}]->(r)")
+                .AppendLine("WITH row, f")
+                .AppendLine("UNWIND row.delays as delay")
+                .AppendLine("MATCH (r:Reason {code: delay.reason})")
+                .AppendLine("MERGE (f)-[fd:DELAYED_BY]->(r)")
+                .AppendLine("SET fd.delay = delay.duration")
                 .AppendLine()
                 // Add Cancellation Information:
-                .AppendLine("WITH flight, f")
-                .AppendLine("MATCH (r: Reason {name: flight.cancellation_code})")
-                .AppendLine("MERGE(f)-[:CANCELLED_BY]->(r)")
+                .AppendLine("WITH row, f")
+                .AppendLine("MATCH (r:Reason {code: row.cancellation_code})")
+                .AppendLine("MERGE (f)-[:CANCELLED_BY]->(r)")
                 .ToString();
 
             using (var session = driver.Session())
             {
-                await session.RunAsync(cypher, new Dictionary<string, object>() { { "flights", ParameterSerializer.ToDictionary(flights) } });
+                session.Run(cypher, new Dictionary<string, object>() { { "flights", ParameterSerializer.ToDictionary(flights) } });
             }
         }
 

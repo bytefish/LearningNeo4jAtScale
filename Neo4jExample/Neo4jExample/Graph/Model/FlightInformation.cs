@@ -30,10 +30,10 @@ namespace Neo4jExample.Graph.Model
         [JsonProperty("month")]
         public int Month { get; set; }
 
-        [JsonProperty("dayOfMonth")]
+        [JsonProperty("day_of_month")]
         public int DayOfMonth { get; set; }
 
-        [JsonProperty("dayOfWeek")]
+        [JsonProperty("day_of_week")]
         public int DayOfWeek { get; set; }
 
         [JsonProperty("delays")]
