@@ -152,7 +152,7 @@ namespace Neo4jExample.Graph.Client
                 .AppendLine()
                 // Add Delay Information:
                 .AppendLine("WITH row, f")
-                .AppendLine("UNWIND row.delays as delay")
+                .AppendLine("UNWIND (CASE row.delays WHEN [] THEN [null] else row.delays END) as delay")
                 .AppendLine("OPTIONAL MATCH (r:Reason {code: delay.reason})")
                 .AppendLine("FOREACH (o IN CASE WHEN r IS NOT NULL THEN [r] ELSE [] END |")
                 .AppendLine("   MERGE (f)-[fd:DELAYED_BY]->(r)")
