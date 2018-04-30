@@ -3,11 +3,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Neo4j.Driver.V1;
-using Neo4jExample.Core.Linq;
 using Neo4jExample.Core.Neo4j.Serializer;
 using Neo4jExample.Core.Neo4j.Settings;
 using Neo4jExample.Graph.Model;
@@ -77,7 +74,12 @@ namespace Neo4jExample.Graph.Client
 
             using (var session = driver.Session())
             {
-                session.Run(cypher, new Dictionary<string, object>() {{"carriers", ParameterSerializer.ToDictionary(carriers) }});
+                var result = session.WriteTransaction(tx => tx.Run(cypher, new Dictionary<string, object>() {{"carriers", ParameterSerializer.ToDictionary(carriers) }}));
+
+                // Get the Summary for Diagnostics:
+                var summary = result.Consume();
+
+                Console.WriteLine($"[{DateTime.Now}] [Carriers] #NodesCreated: {summary.Counters.NodesCreated}, #RelationshipsCreated: {summary.Counters.RelationshipsCreated}");
             }
         }
 
@@ -118,7 +120,7 @@ namespace Neo4jExample.Graph.Client
                 // Get the Summary for Diagnostics:
                 var summary = result.Consume();
 
-                Console.WriteLine($"[{DateTime.Now}] #Nodes: {summary.Counters.NodesCreated}, #Relationships: {summary.Counters.RelationshipsCreated}");
+                Console.WriteLine($"[{DateTime.Now}] [Airports] #NodesCreated: {summary.Counters.NodesCreated}, #RelationshipsCreated: {summary.Counters.RelationshipsCreated}");
             }
         }
 
@@ -178,7 +180,7 @@ namespace Neo4jExample.Graph.Client
                 // Get the Summary for Diagnostics:
                 var summary = result.Consume();
 
-                Console.WriteLine($"[{DateTime.Now}] #Nodes: {summary.Counters.NodesCreated}, #Relationships: {summary.Counters.RelationshipsCreated}");
+                Console.WriteLine($"[{DateTime.Now}] [Flights] #NodesCreated: {summary.Counters.NodesCreated}, #RelationshipsCreated: {summary.Counters.RelationshipsCreated}");
             }
         }
 

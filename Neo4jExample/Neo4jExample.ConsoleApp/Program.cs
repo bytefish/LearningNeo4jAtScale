@@ -4,9 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using Neo4jExample.Core.Linq;
 using Neo4jExample.Core.Neo4j.Settings;
 using Neo4jExample.Csv.Parser;
 using Neo4jExample.Graph.Client;
@@ -43,19 +42,34 @@ namespace Neo4jExample.ConsoleApp
 
         private static void InsertBaseData(Neo4JClient client)
         {
-            var reasons = GetReasons();
-            var carriers = GetCarriers(csvCarriersFile);
-
             // Create the base flight data:
-            client.CreateReasons(reasons);
-            client.CreateCarriers(carriers);
+            client.CreateReasons(GetReasons());
+
+            Console.WriteLine($"Starting Carriers CSV Import: {csvCarriersFile}");
+
+            GetCarriers(csvCarriersFile)
+                // As an Observable:
+                .ToObservable()
+                // Batch in 1000 Entities / or wait 1 Second:
+                .Buffer(TimeSpan.FromSeconds(1), 1000)
+                // Insert when Buffered:
+                .Subscribe(records =>
+                {
+                    client.CreateCarriers(records);
+                });
 
             Console.WriteLine($"Starting Airports CSV Import: {csvAirportsFile}");
 
-            foreach (var airports in GetAirportInformation(csvAirportsFile).AsEnumerable().Batch(1000))
-            {
-                client.CreateAirports(airports.ToList());
-            }
+            GetAirportInformation(csvAirportsFile)
+                // As an Observable:
+                .ToObservable()
+                // Batch in 1000 Entities / or wait 1 Second:
+                .Buffer(TimeSpan.FromSeconds(1), 1000)
+                // Insert when Buffered:
+                .Subscribe(records =>
+                {
+                    client.CreateAirports(records);
+                });
         }
 
         private static void InsertFlightData(Neo4JClient client)
@@ -65,10 +79,16 @@ namespace Neo4jExample.ConsoleApp
             {
                 Console.WriteLine($"Starting Flights CSV Import: {csvFlightStatisticsFile}");
 
-                foreach (var batch in GetFlightInformation(csvFlightStatisticsFile).AsEnumerable().Batch(1000))
-                {
-                    client.CreateFlights(batch.ToList());
-                }
+                GetFlightInformation(csvFlightStatisticsFile)
+                    // As an Observable:
+                    .ToObservable()
+                    // Batch in 1000 Entities / or wait 1 Second:
+                    .Buffer(TimeSpan.FromSeconds(1), 1000)
+                    // Insert when Buffered:
+                    .Subscribe(records =>
+                    {
+                        client.CreateFlights(records);
+                    });
             }
         }
 
