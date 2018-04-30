@@ -67,7 +67,11 @@ namespace Neo4jExample.Graph.Client
 
             using (var session = driver.Session())
             {
-                await session.RunAsync(cypher, new Dictionary<string, object>() { { "carriers", ParameterSerializer.ToDictionary(carriers) } });
+                // Insert in 200 Item Batches:
+                foreach (var batch in carriers.Batch(200))
+                {
+                    await session.RunAsync(cypher, new Dictionary<string, object>() {{"carriers", ParameterSerializer.ToDictionary(batch.ToList()) }});
+                }
             }
         }
 
@@ -76,26 +80,29 @@ namespace Neo4jExample.Graph.Client
             string cypher = new StringBuilder()
                 .AppendLine("UNWIND {airports} AS row")
                 // Add the Country:
-                .AppendLine("MERGE (aCountry:Country { name: row.country.name })")
-                .AppendLine("SET aCountry = row.country")
+                .AppendLine("MERGE (country:Country { name: row.country.name })")
+                .AppendLine("SET country = row.country")
                 .AppendLine()
                 // Add the City:
-                .AppendLine("WITH aCountry, row")
-                .AppendLine("MERGE (aCity:City { name: row.city.name })")
-                .AppendLine("SET aCity = row.city")
-                .AppendLine("MERGE (aCity)-[:COUNTRY]->(aCountry)")
+                .AppendLine("WITH country, row")
+                .AppendLine("MERGE (city:City { name: row.city.name })")
+                .AppendLine("SET city = row.city")
+                .AppendLine("MERGE (city)-[:IN_COUNTRY]->(country)")
                 .AppendLine()
-                //// Add the Airport:
-                .AppendLine("WITH aCity, row")
+                // Add the Airport:
+                .AppendLine("WITH city, row")
                 .AppendLine("MERGE (airport:Airport {airport_id: row.airport.airport_id})")
                 .AppendLine("SET airport = row.airport")
-                .AppendLine("MERGE (a)-[r:IN_CITY]->(aCity)")
+                .AppendLine("MERGE (airport)-[r:IN_CITY]->(city)")
                 .AppendLine()
                 .ToString();
 
             using (var session = driver.Session())
             {
-                await session.RunAsync(cypher, new Dictionary<string, object>() { { "airports", ParameterSerializer.ToDictionary(airports) } });
+                foreach (var batch in airports.Batch(200))
+                {
+                    await session.RunAsync(cypher, new Dictionary<string, object>() {{"airports", ParameterSerializer.ToDictionary(batch.ToList()) }});
+                }
             }
         }
 
@@ -149,7 +156,8 @@ namespace Neo4jExample.Graph.Client
 
             using (var session = driver.Session())
             {
-                foreach (var batch in flights.Batch(10))
+                // Insert in 200 Item Batches:
+                foreach (var batch in flights.Batch(200))
                 {
                     await session.RunAsync(cypher, new Dictionary<string, object>() {{"flights", ParameterSerializer.ToDictionary(batch.ToList()) }});
                 }
