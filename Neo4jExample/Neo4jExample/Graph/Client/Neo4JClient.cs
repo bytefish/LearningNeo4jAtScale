@@ -136,8 +136,8 @@ namespace Neo4jExample.Graph.Client
                 .AppendLine()
                 // Add Cancellation Information:
                 .AppendLine("WITH row, f")
-                .AppendLine("MATCH (r:Reason {code: row.cancellation_code})")
-                .AppendLine("MERGE (f)-[:CANCELLED_BY]->(r)")
+                .AppendLine("MATCH (cr:Reason {code: row.cancellation_code})")
+                .AppendLine("MERGE (f)-[:CANCELLED_BY]->(cr)")
                 .ToString();
 
             using (var session = driver.Session())

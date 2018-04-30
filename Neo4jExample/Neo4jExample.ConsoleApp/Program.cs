@@ -1,14 +1,11 @@
 ﻿// Copyright (c) Philipp Wagner. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive.Linq;
-using System.Runtime.ConstrainedExecution;
 using System.Text;
 using System.Threading.Tasks;
+using Neo4jExample.Core.Linq;
 using Neo4jExample.Core.Neo4j.Settings;
 using Neo4jExample.Csv.Parser;
 using Neo4jExample.Graph.Client;
@@ -58,37 +55,39 @@ namespace Neo4jExample.ConsoleApp
 
         public static async Task RunAsync()
         {
-            // Get the Base Data:
-            var reasons = GetReasons();
-            var carriers = GetCarriers(csvCarriersFile);
-            var airports = GetAirportInformation(csvAirportsFile);
-
             var settings = ConnectionSettings.CreateBasicAuth("bolt://localhost:7687/db/flights", "neo4j", "test_pwd");
 
             using (var client = new Neo4JClient(settings))
             {
                 // Create Indices for faster Lookups:
                 await client.CreateIndices();
+                // Insert the Base Data (Airports, Carriers, ...):
+                await InsertBaseData(client);
+                // Insert the Flight Data:
+                await InsertFlightData(client);
+            }
+        }
 
-                // Create the base flight data:
-                await client.CreateReasons(reasons);
-                await client.CreateCarriers(carriers);
-                await client.CreateAirports(airports);
+        private static async Task InsertBaseData(Neo4JClient client)
+        {
+            var reasons = GetReasons();
+            var carriers = GetCarriers(csvCarriersFile);
+            var airports = GetAirportInformation(csvAirportsFile);
+            
+            // Create the base flight data:
+            await client.CreateReasons(reasons);
+            await client.CreateCarriers(carriers);
+            await client.CreateAirports(airports);
+        }
 
-                // Create Base Data:
-                foreach (var csvFlightStatisticsFile in csvFlightStatisticsFiles)
+        private static async Task InsertFlightData(Neo4JClient client)
+        {
+            // Create Flight Data with Batched Items:
+            foreach (var csvFlightStatisticsFile in csvFlightStatisticsFiles)
+            {
+                foreach (var batch in GetFlightInformation(csvFlightStatisticsFile).AsEnumerable().Batch(10000))
                 {
-                    GetFlightInformation(csvFlightStatisticsFile)
-                        // As an Observable:
-                        .ToObservable()
-                        // Batch in 80000 Entities / or wait 1 Second:
-                        .Buffer(TimeSpan.FromSeconds(1), 80000)
-                        // Project the Data with Side-Effects:
-                        .Select(x => Observable.FromAsync(() => client.CreateFlights(x)))
-                        // Wait for the Observable to complete:
-                        .Wait()
-                        // Evaluate the Observable for its side-effects:
-                        .Subscribe();
+                    await client.CreateFlights(batch.ToList());
                 }
             }
         }
