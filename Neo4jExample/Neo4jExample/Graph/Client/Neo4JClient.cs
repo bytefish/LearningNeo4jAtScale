@@ -20,10 +20,15 @@ namespace Neo4jExample.Graph.Client
         
         public Neo4JClient(IConnectionSettings settings)
         {
-            this.driver = GraphDatabase.Driver(settings.Uri, settings.AuthToken);
+            Config config = Config.DefaultConfig;
+
+            // Increase MaxWriteBuffer to 20MB:
+            config.MaxWriteBufferSize = 20971520;
+
+            this.driver = GraphDatabase.Driver(settings.Uri, settings.AuthToken, config);
         }
 
-        public async Task CreateIndices()
+        public void CreateIndices()
         {
             string[] queries = {
                 // Indexes:
@@ -43,12 +48,12 @@ namespace Neo4jExample.Graph.Client
             {
                 foreach(var query in queries)
                 {
-                    await session.RunAsync(query);
+                    session.Run(query);
                 }
             }
         }
 
-        public async Task CreateReasons(IList<Reason> reasons)
+        public void CreateReasons(IList<Reason> reasons)
         {
             string cypher = new StringBuilder()
                 .AppendLine("UNWIND {reasons} AS reason")
@@ -58,11 +63,11 @@ namespace Neo4jExample.Graph.Client
 
             using (var session = driver.Session())
             {
-                await session.RunAsync(cypher, new Dictionary<string, object>() { { "reasons", ParameterSerializer.ToDictionary(reasons) } });
+                session.Run(cypher, new Dictionary<string, object>() { { "reasons", ParameterSerializer.ToDictionary(reasons) } });
             }
         }
 
-        public async Task CreateCarriers(IList<Carrier> carriers)
+        public void CreateCarriers(IList<Carrier> carriers)
         {
             string cypher = new StringBuilder()
                 .AppendLine("UNWIND {carriers} AS carrier")
@@ -72,15 +77,11 @@ namespace Neo4jExample.Graph.Client
 
             using (var session = driver.Session())
             {
-                // Insert in 200 Item Batches:
-                foreach (var batch in carriers.Batch(200))
-                {
-                    await session.RunAsync(cypher, new Dictionary<string, object>() {{"carriers", ParameterSerializer.ToDictionary(batch.ToList()) }});
-                }
+                session.Run(cypher, new Dictionary<string, object>() {{"carriers", ParameterSerializer.ToDictionary(carriers) }});
             }
         }
 
-        public async Task CreateAirports(IList<AirportInformation> airports)
+        public void CreateAirports(IList<AirportInformation> airports)
         {
             string cypher = new StringBuilder()
                 .AppendLine("UNWIND {airports} AS row")
@@ -112,14 +113,16 @@ namespace Neo4jExample.Graph.Client
 
             using (var session = driver.Session())
             {
-                foreach (var batch in airports.Batch(200))
-                {
-                    await session.RunAsync(cypher, new Dictionary<string, object>() {{"airports", ParameterSerializer.ToDictionary(batch.ToList()) }});
-                }
+                var result = session.WriteTransaction(tx => tx.Run(cypher, new Dictionary<string, object>() {{"airports", ParameterSerializer.ToDictionary(airports) }}));
+
+                // Get the Summary for Diagnostics:
+                var summary = result.Consume();
+
+                Console.WriteLine($"[{DateTime.Now}] #Nodes: {summary.Counters.NodesCreated}, #Relationships: {summary.Counters.RelationshipsCreated}");
             }
         }
 
-        public async Task CreateFlights(IList<FlightInformation> flights)
+        public void CreateFlights(IList<FlightInformation> flights)
         {
             string cypher = new StringBuilder()
                 .AppendLine("UNWIND {flights} AS row")
@@ -141,13 +144,13 @@ namespace Neo4jExample.Graph.Client
                 // Add Carrier Information:
                 .AppendLine("WITH row, f")
                 .AppendLine("MATCH (car:Carrier {code: row.carrier})")
-                .AppendLine("MERGE (f)-[:CARRIER]->(car)")
+                .AppendLine("CREATE (f)-[:CARRIER]->(car)")
                 .AppendLine()
                 // Add Cancellation Information:
                 .AppendLine("WITH row, f")
                 .AppendLine("OPTIONAL MATCH (r:Reason {code: row.cancellation_code})")
                 .AppendLine("FOREACH (o IN CASE WHEN r IS NOT NULL THEN [r] ELSE [] END |")
-                .AppendLine("   MERGE(f) -[:CANCELLED_BY]->(r)")
+                .AppendLine("   CREATE (f) -[:CANCELLED_BY]->(r)")
                 .AppendLine(")")
                 .AppendLine()
                 // Add Delay Information:
@@ -155,25 +158,27 @@ namespace Neo4jExample.Graph.Client
                 .AppendLine("UNWIND (CASE row.delays WHEN [] THEN [null] else row.delays END) as delay")
                 .AppendLine("OPTIONAL MATCH (r:Reason {code: delay.reason})")
                 .AppendLine("FOREACH (o IN CASE WHEN r IS NOT NULL THEN [r] ELSE [] END |")
-                .AppendLine("   MERGE (f)-[fd:DELAYED_BY]->(r)")
+                .AppendLine("   CREATE (f)-[fd:DELAYED_BY]->(r)")
                 .AppendLine("   SET fd.delay = delay.duration")
                 .AppendLine(")")
                 .AppendLine()
                 // Add Aircraft Information:
                 .AppendLine("WITH row, f")
                 .AppendLine("FOREACH(a IN (CASE row.tail_number WHEN \"\" THEN [] ELSE [row.tail_number] END) |")
-                .AppendLine("   MERGE(craft:Aircraft {tail_num: a})")
-                .AppendLine("   MERGE (f)-[:AIRCRAFT]->(craft)")
+                .AppendLine("   MERGE (craft:Aircraft {tail_num: a})")
+                .AppendLine("   CREATE (f)-[:AIRCRAFT]->(craft)")
                 .AppendLine(")")
                 .ToString();
-
+            
             using (var session = driver.Session())
             {
-                // Insert in 200 Item Batches:
-                foreach (var batch in flights.Batch(200))
-                {
-                    await session.RunAsync(cypher, new Dictionary<string, object>() {{"flights", ParameterSerializer.ToDictionary(batch.ToList()) }});
-                }
+                // Insert in a Transaction:
+                var result = session.WriteTransaction(tx => tx.Run(cypher, new Dictionary<string, object>() {{"flights", ParameterSerializer.ToDictionary(flights)}}));
+
+                // Get the Summary for Diagnostics:
+                var summary = result.Consume();
+
+                Console.WriteLine($"[{DateTime.Now}] #Nodes: {summary.Counters.NodesCreated}, #Relationships: {summary.Counters.RelationshipsCreated}");
             }
         }
 

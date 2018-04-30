@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Philipp Wagner. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,52 +20,54 @@ namespace Neo4jExample.ConsoleApp
         private static readonly string csvCarriersFile = @"D:\github\LearningNeo4jAtScale\Resources\UNIQUE_CARRIERS.csv";
         private static readonly string csvAirportsFile = @"D:\github\LearningNeo4jAtScale\Resources\56803256_T_MASTER_CORD.csv";
 
-        // The 2015 Flight Data:
+        // Use the 2014 Flight Data:
         private static readonly string[] csvFlightStatisticsFiles = new[]
         {
-                "D:\\datasets\\test_data.csv"
+                "D:\\datasets\\AOTP\\ZIP\\AirOnTimeCSV_1987_2017\\AirOnTimeCSV\\airOT201401.csv",
             };
 
         public static void Main(string[] args)
-        {
-            RunAsync().GetAwaiter().GetResult();
-        }
-
-        public static async Task RunAsync()
         {
             var settings = ConnectionSettings.CreateBasicAuth("bolt://localhost:7687/db/flights", "neo4j", "test_pwd");
 
             using (var client = new Neo4JClient(settings))
             {
                 // Create Indices for faster Lookups:
-                await client.CreateIndices();
+                client.CreateIndices();
                 // Insert the Base Data (Airports, Carriers, ...):
-                await InsertBaseData(client);
+                InsertBaseData(client);
                 // Insert the Flight Data:
-                await InsertFlightData(client);
+                InsertFlightData(client);
             }
         }
 
-        private static async Task InsertBaseData(Neo4JClient client)
+        private static void InsertBaseData(Neo4JClient client)
         {
             var reasons = GetReasons();
             var carriers = GetCarriers(csvCarriersFile);
-            var airports = GetAirportInformation(csvAirportsFile);
-            
+
             // Create the base flight data:
-            await client.CreateReasons(reasons);
-            await client.CreateCarriers(carriers);
-            await client.CreateAirports(airports);
+            client.CreateReasons(reasons);
+            client.CreateCarriers(carriers);
+
+            Console.WriteLine($"Starting Airports CSV Import: {csvAirportsFile}");
+
+            foreach (var airports in GetAirportInformation(csvAirportsFile).AsEnumerable().Batch(1000))
+            {
+                client.CreateAirports(airports.ToList());
+            }
         }
 
-        private static async Task InsertFlightData(Neo4JClient client)
+        private static void InsertFlightData(Neo4JClient client)
         {
             // Create Flight Data with Batched Items:
             foreach (var csvFlightStatisticsFile in csvFlightStatisticsFiles)
             {
-                foreach (var batch in GetFlightInformation(csvFlightStatisticsFile).AsEnumerable().Batch(80000))
+                Console.WriteLine($"Starting Flights CSV Import: {csvFlightStatisticsFile}");
+
+                foreach (var batch in GetFlightInformation(csvFlightStatisticsFile).AsEnumerable().Batch(1000))
                 {
-                    await client.CreateFlights(batch.ToList());
+                    client.CreateFlights(batch.ToList());
                 }
             }
         }
@@ -83,7 +86,7 @@ namespace Neo4jExample.ConsoleApp
                 .ToList();
         }
 
-        private static IList<Graph.Model.AirportInformation> GetAirportInformation(string filename)
+        private static ParallelQuery<Graph.Model.AirportInformation> GetAirportInformation(string filename)
         {
             return Parsers.AirportParser
                     // Read from the Master Coordinate CSV File:
@@ -123,9 +126,7 @@ namespace Neo4jExample.ConsoleApp
                             Code = x.AirportStateCode,
                             Name = x.AirportStateName
                         }
-                    })
-                    // Evaluate:
-                    .ToList();
+                    });
         }
 
         private static IList<Graph.Model.Reason> GetReasons()
