@@ -26,7 +26,10 @@ namespace Neo4jExample.Graph.Client
         public async Task CreateIndices()
         {
             string[] queries = {
-                "CREATE CONSTRAINT ON (f:Flight) ASSERT f.flight_number IS UNIQUE",
+                // Indexes:
+                "CREATE INDEX ON :Flight(flight_number)",
+                "CREATE INDEX ON :Airport(abbr)",
+                // Constraints:
                 "CREATE CONSTRAINT ON (a:Airport) ASSERT a.airport_id IS UNIQUE",
                 "CREATE CONSTRAINT ON (r:Reason) ASSERT r.code IS UNIQUE",
                 "CREATE CONSTRAINT ON (c:State) ASSERT c.name IS UNIQUE",
@@ -124,22 +127,16 @@ namespace Neo4jExample.Graph.Client
                 .AppendLine("MATCH (oAirport:Airport {airport_id: row.origin})")
                 .AppendLine("MATCH (dAirport:Airport {airport_id: row.destination})")
                 // Create the Flight Item:
-                .AppendLine("MERGE (f:Flight {flight_number: row.flight_number})")
+                .AppendLine("CREATE (f:Flight {flight_number: row.flight_number}),")
+                // Relate Flight to Origin Airport:
+                .AppendLine("   (f)-[:ORIGIN {taxi_time: row.taxi_out, dep_delay: row.departure_delay}]->(oAirport),")
+                .AppendLine("   (f)-[:DESTINATION {taxi_time: row.taxi_in, arr_delay: row.arrival_delay}]->(dAirport)")
+                .AppendLine()
                 // Set Flight Details:
                 .AppendLine("SET f.year = row.year,")
                 .AppendLine("    f.month = row.month,")
                 .AppendLine("    f.day = row.day_of_month,")
                 .AppendLine("    f.weekday = row.day_of_week")
-                .AppendLine()
-                // Relate Flight to Origin Airport:
-                .AppendLine("MERGE (f)-[o:ORIGIN]->(oAirport)")
-                .AppendLine("SET o.taxi_time = row.taxi_out,")
-                .AppendLine("    o.dep_delay = row.departure_delay")
-                .AppendLine()
-                // Relate Flight to Destination Airport:
-                .AppendLine("MERGE (f)-[d:DESTINATION]->(dAirport)")
-                .AppendLine("SET d.taxi_time = row.taxi_in,")
-                .AppendLine("    d.arr_delay = row.arrival_delay")
                 .AppendLine()
                 // Add Carrier Information:
                 .AppendLine("WITH row, f")
