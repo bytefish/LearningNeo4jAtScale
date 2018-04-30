@@ -142,7 +142,7 @@ namespace Neo4jExample.Graph.Client
 
             using (var session = driver.Session())
             {
-                session.Run(cypher, new Dictionary<string, object>() { { "flights", ParameterSerializer.ToDictionary(flights) } });
+                await session.RunAsync(cypher, new Dictionary<string, object>() { { "flights", ParameterSerializer.ToDictionary(flights) } });
             }
         }
 
