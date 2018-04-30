@@ -16,5 +16,8 @@ namespace Neo4jExample.Graph.Model
 
         [JsonProperty("country")]
         public Country Country { get; set; }
+
+        [JsonProperty("state")]
+        public State State { get; set; }
     }
 }

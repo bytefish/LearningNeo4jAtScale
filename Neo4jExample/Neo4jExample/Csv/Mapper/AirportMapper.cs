@@ -13,12 +13,14 @@ namespace Neo4jExample.Csv.Mapper
         public AirportMapper()
         {
             MapProperty(1, x => x.AirportId);
+            MapProperty(2, x => x.AirportAbbr);
             MapProperty(3, x => x.AirportName);
             MapProperty(4, x => x.AirportCityName);
             MapProperty(6, x => x.AirportWac);
             MapProperty(7, x => x.AirportCountryName);
             MapProperty(8, x => x.AirportCountryCodeISO);
             MapProperty(9, x => x.AirportStateName);
+            MapProperty(10, x => x.AirportStateCode);
             MapProperty(28, x => x.AirportIsLatest, new BoolConverter("1", "0", StringComparison.OrdinalIgnoreCase));
         }
     }

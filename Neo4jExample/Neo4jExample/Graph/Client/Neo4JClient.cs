@@ -29,9 +29,11 @@ namespace Neo4jExample.Graph.Client
                 "CREATE CONSTRAINT ON (f:Flight) ASSERT f.flight_number IS UNIQUE",
                 "CREATE CONSTRAINT ON (a:Airport) ASSERT a.airport_id IS UNIQUE",
                 "CREATE CONSTRAINT ON (r:Reason) ASSERT r.code IS UNIQUE",
+                "CREATE CONSTRAINT ON (c:State) ASSERT c.name IS UNIQUE",
                 "CREATE CONSTRAINT ON (c:City) ASSERT c.name IS UNIQUE",
                 "CREATE CONSTRAINT ON (c:Country) ASSERT c.name IS UNIQUE",
-                "CREATE CONSTRAINT ON (c:Carrier) ASSERT c.code IS UNIQUE"
+                "CREATE CONSTRAINT ON (c:Carrier) ASSERT c.code IS UNIQUE",
+                "CREATE CONSTRAINT ON (c:Aircraft) ASSERT c.tail_num IS UNIQUE"
             };
 
             using (var session = driver.Session())
@@ -88,6 +90,14 @@ namespace Neo4jExample.Graph.Client
                 .AppendLine("MERGE (city:City { name: row.city.name })")
                 .AppendLine("SET city = row.city")
                 .AppendLine("MERGE (city)-[:IN_COUNTRY]->(country)")
+                .AppendLine()
+                // Add the Optional State:
+                .AppendLine("WITH city, country, row")
+                .AppendLine("FOREACH (s IN (CASE row.state.name WHEN \"\" THEN [] ELSE [row.state.name] END) |")
+                .AppendLine("   MERGE (state:State {name: row.state.name})")
+                .AppendLine("   MERGE (state)-[:IN_COUNTRY]->(country)")
+                .AppendLine("   MERGE (city)-[:IN_STATE]->(state)")
+                .AppendLine(")")
                 .AppendLine()
                 // Add the Airport:
                 .AppendLine("WITH city, row")
@@ -152,6 +162,12 @@ namespace Neo4jExample.Graph.Client
                 .AppendLine("   SET fd.delay = delay.duration")
                 .AppendLine(")")
                 .AppendLine()
+                // Add Aircraft Information:
+                .AppendLine("WITH row, f")
+                .AppendLine("FOREACH(a IN (CASE row.tail_number WHEN \"\" THEN [] ELSE [row.tail_number] END) |")
+                .AppendLine("   MERGE(craft:Aircraft {tail_num: a})")
+                .AppendLine("   MERGE (f)-[:AIRCRAFT]->(craft)")
+                .AppendLine(")")
                 .ToString();
 
             using (var session = driver.Session())

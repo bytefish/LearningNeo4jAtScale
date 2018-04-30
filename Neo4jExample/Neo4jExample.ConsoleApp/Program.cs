@@ -129,16 +129,22 @@ namespace Neo4jExample.ConsoleApp
                             AirportWac = x.AirportWac,
                             CountryCodeISO = x.AirportCountryCodeISO,
                             Name = x.AirportName,
-                            State = x.AirportStateName
+                            State = x.AirportStateName,
+                            Abbr = x.AirportAbbr
                         },
                         City = new Graph.Model.City
                         {
                             Name = x.AirportCityName
                         },
-                        Country = new Graph.Model.Country()
+                        Country = new Graph.Model.Country
                         {
                             Name = x.AirportCountryName,
                             IsoCode = x.AirportCountryCodeISO
+                        },
+                        State = new Graph.Model.State
+                        {
+                            Code = x.AirportStateCode,
+                            Name = x.AirportStateName
                         }
                     })
                     // Evaluate:

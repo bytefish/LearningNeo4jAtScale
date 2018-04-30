@@ -10,24 +10,27 @@ namespace Neo4jExample.Graph.Model
         [JsonProperty("airport_id")]
         public string AirportId { get; set; }
 
+        [JsonProperty("abbr")]
+        public string Abbr { get; set; }
+        
         [JsonProperty("name")]
         public string Name { get; set; }
 
         [JsonProperty("city")]
         public string City { get; set; }
 
+        [JsonProperty("state")]
+        public string State { get; set; }
+        
+        [JsonProperty("country")]
+        public string Country { get; set; }
+        
         [JsonProperty("wac")]
         public string AirportWac { get; set; }
 
-        [JsonProperty("country")]
-        public string Country { get; set; }
-
         [JsonProperty("country_code_iso")]
         public string CountryCodeISO { get; set; }
-
-        [JsonProperty("state")]
-        public string State { get; set; }
-
+        
         [JsonProperty("is_latest")]
         public bool AirportIsLatest { get; set; }
     }
