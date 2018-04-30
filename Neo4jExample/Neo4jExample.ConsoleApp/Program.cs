@@ -85,7 +85,7 @@ namespace Neo4jExample.ConsoleApp
             // Create Flight Data with Batched Items:
             foreach (var csvFlightStatisticsFile in csvFlightStatisticsFiles)
             {
-                foreach (var batch in GetFlightInformation(csvFlightStatisticsFile).AsEnumerable().Batch(1000))
+                foreach (var batch in GetFlightInformation(csvFlightStatisticsFile).AsEnumerable().Batch(80000))
                 {
                     await client.CreateFlights(batch.ToList());
                 }

@@ -3,9 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Neo4j.Driver.V1;
+using Neo4jExample.Core.Linq;
 using Neo4jExample.Core.Neo4j.Serializer;
 using Neo4jExample.Core.Neo4j.Settings;
 using Neo4jExample.Graph.Model;
@@ -96,7 +98,7 @@ namespace Neo4jExample.Graph.Client
                 await session.RunAsync(cypher, new Dictionary<string, object>() { { "airports", ParameterSerializer.ToDictionary(airports) } });
             }
         }
-        
+
         public async Task CreateFlights(IList<FlightInformation> flights)
         {
             string cypher = new StringBuilder()
@@ -129,21 +131,28 @@ namespace Neo4jExample.Graph.Client
                 .AppendLine()
                 // Add Cancellation Information:
                 .AppendLine("WITH row, f")
-                .AppendLine("MATCH (r:Reason {code: row.cancellation_code})")
-                .AppendLine("MERGE (f)-[:CANCELLED_BY]->(r)")
+                .AppendLine("OPTIONAL MATCH (r:Reason {code: row.cancellation_code})")
+                .AppendLine("FOREACH (o IN CASE WHEN r IS NOT NULL THEN [r] ELSE [] END |")
+                .AppendLine("   MERGE(f) -[:CANCELLED_BY]->(r)")
+                .AppendLine(")")
                 .AppendLine()
                 // Add Delay Information:
                 .AppendLine("WITH row, f")
                 .AppendLine("UNWIND row.delays as delay")
-                .AppendLine("MATCH (r:Reason {code: delay.reason})")
-                .AppendLine("MERGE (f)-[fd:DELAYED_BY]->(r)")
-                .AppendLine("SET fd.delay = delay.duration")
+                .AppendLine("OPTIONAL MATCH (r:Reason {code: delay.reason})")
+                .AppendLine("FOREACH (o IN CASE WHEN r IS NOT NULL THEN [r] ELSE [] END |")
+                .AppendLine("   MERGE (f)-[fd:DELAYED_BY]->(r)")
+                .AppendLine("   SET fd.delay = delay.duration")
+                .AppendLine(")")
                 .AppendLine()
                 .ToString();
 
             using (var session = driver.Session())
             {
-                session.Run(cypher, new Dictionary<string, object>() { { "flights", ParameterSerializer.ToDictionary(flights) } });
+                foreach (var batch in flights.Batch(10))
+                {
+                    await session.RunAsync(cypher, new Dictionary<string, object>() {{"flights", ParameterSerializer.ToDictionary(batch.ToList()) }});
+                }
             }
         }
 
