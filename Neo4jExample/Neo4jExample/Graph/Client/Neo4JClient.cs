@@ -127,6 +127,11 @@ namespace Neo4jExample.Graph.Client
                 .AppendLine("MATCH (car:Carrier {code: row.carrier})")
                 .AppendLine("MERGE (f)-[:CARRIER]->(car)")
                 .AppendLine()
+                // Add Cancellation Information:
+                .AppendLine("WITH row, f")
+                .AppendLine("MATCH (r:Reason {code: row.cancellation_code})")
+                .AppendLine("MERGE (f)-[:CANCELLED_BY]->(r)")
+                .AppendLine()
                 // Add Delay Information:
                 .AppendLine("WITH row, f")
                 .AppendLine("UNWIND row.delays as delay")
@@ -134,15 +139,11 @@ namespace Neo4jExample.Graph.Client
                 .AppendLine("MERGE (f)-[fd:DELAYED_BY]->(r)")
                 .AppendLine("SET fd.delay = delay.duration")
                 .AppendLine()
-                // Add Cancellation Information:
-                .AppendLine("WITH row, f")
-                .AppendLine("MATCH (cr:Reason {code: row.cancellation_code})")
-                .AppendLine("MERGE (f)-[:CANCELLED_BY]->(cr)")
                 .ToString();
 
             using (var session = driver.Session())
             {
-                await session.RunAsync(cypher, new Dictionary<string, object>() { { "flights", ParameterSerializer.ToDictionary(flights) } });
+                session.Run(cypher, new Dictionary<string, object>() { { "flights", ParameterSerializer.ToDictionary(flights) } });
             }
         }
 
