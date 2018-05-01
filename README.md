@@ -73,11 +73,9 @@ She also posted a great [Introduction To Cypher] video on YouTube, which explain
 
 On a high-level the Project looks like this:
 
-<div style="display:flex; align-items:center; justify-content:center;">
-    <a href="https://github.com/bytefish/LearningNeo4hAtScale/raw/master/Neo4jExample/Screenshots/project_structure.jpg">
-        <img src="https://github.com/bytefish/LearningNeo4hAtScale/raw/master/Neo4jExample/Screenshots/project_structure.jpg">
-    </a>
-</div>
+<a href="https://github.com/bytefish/LearningNeo4jAtScale/raw/master/Neo4jExample/Screenshots/project_structure.jpg">
+    <img src="https://github.com/bytefish/LearningNeo4jAtScale/raw/master/Neo4jExample/Screenshots/project_structure.jpg">
+</a>
 
 #### Neo4jExample ####
 
@@ -197,11 +195,9 @@ complete functionality, so it is quite easy to explore the data.
 
 I was able to insert something around ``3.000`` nodes and ``15.000`` relationships per second: 
 
-<div style="display:flex; align-items:center; justify-content:center;">
-    <a href="https://github.com/bytefish/LearningNeo4hAtScale/raw/master/Neo4jExample/Screenshots/neo4j_import.png">
-        <img src="https://github.com/bytefish/LearningNeo4hAtScale/raw/master/Neo4jExample/Screenshots/neo4j_import.png">
-    </a>
-</div>
+<a href="https://github.com/bytefish/LearningNeo4jAtScale/raw/master/Neo4jExample/Screenshots/neo4j_import.png">
+    <img src="https://github.com/bytefish/LearningNeo4jAtScale/raw/master/Neo4jExample/Screenshots/neo4j_import.png">
+</a>
 
 I know, that the ``LOAD CSV`` import of Neo4j is a lot faster, but it is mainly due to its complete bypassing of transactions (when 
 I read the Batch Importer source code) correctly. In real life we need the ACID guarantees of Neo4j, nothing is as cruel as inconsistent 
@@ -235,11 +231,9 @@ LIMIT 10
 Again I am pretty sure the figures can be improved by using the correct indices and tuning the Neo4j configuration. But this would be a follow-up 
 post on its own:
 
-<div style="display:flex; align-items:center; justify-content:center;">
-    <a href="https://github.com/bytefish/LearningNeo4hAtScale/raw/master/Neo4jExample/Screenshots/top_airports_delayed_by_weather.jpg">
-        <img src="https://github.com/bytefish/LearningNeo4hAtScale/raw/master/Neo4jExample/Screenshots/top_airports_delayed_by_weather.jpg">
-    </a>
-</div>
+<a href="https://github.com/bytefish/LearningNeo4jAtScale/raw/master/Neo4jExample/Screenshots/top_airports_delayed_by_weather.jpg">
+    <img src="https://github.com/bytefish/LearningNeo4jAtScale/raw/master/Neo4jExample/Screenshots/top_airports_delayed_by_weather.jpg">
+</a>
 
 If you have ideas for improving the performance, please drop a note on GitHub.
 
