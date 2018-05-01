@@ -34,8 +34,7 @@ namespace Neo4jExample.ConsoleApp
             "D:\\datasets\\AOTP\\ZIP\\AirOnTimeCSV_1987_2017\\AirOnTimeCSV\\airOT201410.csv",
             "D:\\datasets\\AOTP\\ZIP\\AirOnTimeCSV_1987_2017\\AirOnTimeCSV\\airOT201411.csv",
             "D:\\datasets\\AOTP\\ZIP\\AirOnTimeCSV_1987_2017\\AirOnTimeCSV\\airOT201412.csv",
-
-            };
+        };
 
         public static void Main(string[] args)
         {
@@ -222,8 +221,6 @@ namespace Neo4jExample.ConsoleApp
                     TaxiOut = x.TaxiOut,
                 });
         }
-
-
 
         private static IList<Graph.Model.Delay> GetDelays(Csv.Model.Flight source)
         {
